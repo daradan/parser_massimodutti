@@ -12,6 +12,7 @@ LAST_N_PRICES = 10
 TG_TOKEN = os.getenv('TG_TOKEN')
 TG_CHANNEL = os.getenv('TG_CHANNEL')
 TG_CHANNEL_ERROR = os.getenv('TG_CHANNEL_ERROR')
+TG_CHANNEL_NAME = 'massimodutti_skidki_kazakhstan'
 
 PARAMS_CATALOG = {
     'languageId': '-20',

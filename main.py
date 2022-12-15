@@ -25,11 +25,7 @@ class MassimoDuttiParser:
     def start(self):
         logging.info(f"Massimo Dutti Parser Start: {self.market}")
         for url in self.make_urls():
-            try:
-                self.get_data_from_json_loads(url)
-            except Exception as e:
-                logging.exception(e)
-                send_to_telegram.send_error(e)
+            self.get_data_from_json_loads(url)
 
     def make_urls(self) -> list:
         urls = []
@@ -48,35 +44,40 @@ class MassimoDuttiParser:
 
         products = json_loads['products']
         for product in products.values():
-            if not product.get('bundleProductSummaries') or len(product.get('bundleProductSummaries')) <= 0:
+            try:
+                if not product.get('bundleProductSummaries') or len(product.get('bundleProductSummaries')) <= 0:
+                    continue
+                product_id = product.get('id')
+                prices = json_loads['filters']['maxPriceFilter']
+                price = utils.get_price(product_id, prices)
+                if not price:
+                    continue
+                product = product['bundleProductSummaries'][0]
+                if not product.get('id') \
+                        or not product.get('name') \
+                        or not product.get('familyName', product.get('subFamilyName')) \
+                        or not product.get('detail') \
+                        or not product['detail'].get('colors') \
+                        or len(product['detail'].get('colors')) <= 0:
+                    continue
+                product_img = product['detail']['xmedia'][0]
+                product_obj = {
+                    'market': self.market,
+                    'url': f"{config.URL}kz/{product.get('productUrl')}",
+                    'store_id': product_id,
+                    'category': product.get('familyName', product.get('subFamilyName')),
+                    'name': product.get('name'),
+                    'color': product['detail']['colors'][0]['name'],
+                    'description': product['detail']['description'],
+                    'image': utils.make_photo_urls(product_img)
+                }
+                product_obj = ProductSchema(**product_obj)
+                price_obj = PriceSchema(price=price // 100)
+                self.check_data_from_db(product_obj, price_obj)
+            except Exception as e:
+                logging.exception(f"{self.market} product: {e}")
+                send_to_telegram.send_error(f"{self.market} product: {e}")
                 continue
-            product_id = product.get('id')
-            prices = json_loads['filters']['maxPriceFilter']
-            price = utils.get_price(product_id, prices)
-            if not price:
-                continue
-            product = product['bundleProductSummaries'][0]
-            if not product.get('id') \
-                    or not product.get('name') \
-                    or not product.get('familyName', product.get('subFamilyName')) \
-                    or not product.get('detail') \
-                    or not product['detail'].get('colors') \
-                    or len(product['detail'].get('colors')) <= 0:
-                continue
-            product_img = product['detail']['xmedia'][0]
-            product_obj = {
-                'market': self.market,
-                'url': f"{config.URL}kz/{product.get('productUrl')}",
-                'store_id': product_id,
-                'category': product.get('familyName', product.get('subFamilyName')),
-                'name': product.get('name'),
-                'color': product['detail']['colors'][0]['name'],
-                'description': product['detail']['description'],
-                'image': utils.make_photo_urls(product_img)
-            }
-            product_obj = ProductSchema(**product_obj)
-            price_obj = PriceSchema(price=price // 100)
-            self.check_data_from_db(product_obj, price_obj)
 
     def check_data_from_db(self, product_obj: ProductSchema, price_obj: PriceSchema):
         self.items_count += 1
@@ -103,7 +104,11 @@ class MassimoDuttiWomanParser(MassimoDuttiParser):
     def __init__(self):
         super().__init__()
         self.market = 'massimodutti_w'
-        self.urls_category_id = categories.categories_by_market(self.market)
+        try:
+            self.urls_category_id = categories.categories_by_market(self.market)
+        except Exception as e:
+            logging.exception(f"{self.market} category: {e}")
+            send_to_telegram.send_error(f"{self.market} category: {e}")
         self.products_crud: WomanProductsCrud = WomanProductsCrud(session=self.db_session)
         self.prices_crud: WomanPricesCrud = WomanPricesCrud(session=self.db_session)
 
@@ -112,7 +117,11 @@ class MassimoDuttiManParser(MassimoDuttiParser):
     def __init__(self):
         super().__init__()
         self.market = 'massimodutti_m'
-        self.urls_category_id = categories.categories_by_market(self.market)
+        try:
+            self.urls_category_id = categories.categories_by_market(self.market)
+        except Exception as e:
+            logging.exception(f"{self.market} category: {e}")
+            send_to_telegram.send_error(f"{self.market} category: {e}")
         self.products_crud: ManProductsCrud = ManProductsCrud(session=self.db_session)
         self.prices_crud: ManPricesCrud = ManPricesCrud(session=self.db_session)
 
@@ -121,7 +130,11 @@ class MassimoDuttiHighlightsParser(MassimoDuttiParser):
     def __init__(self):
         super().__init__()
         self.market = 'massimodutti_h'
-        self.urls_category_id = categories.categories_by_market(self.market)
+        try:
+            self.urls_category_id = categories.categories_by_market(self.market)
+        except Exception as e:
+            logging.exception(f"{self.market} category: {e}")
+            send_to_telegram.send_error(f"{self.market} category: {e}")
         self.products_crud: HighlightsProductsCrud = HighlightsProductsCrud(session=self.db_session)
         self.prices_crud: HighlightsPricesCrud = HighlightsPricesCrud(session=self.db_session)
 

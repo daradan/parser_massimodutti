@@ -67,4 +67,4 @@ def fix_last_n_prices(last_n_prices):
 
 def make_utm_tags() -> str:
     utm_campaign = config.TG_CHANNEL[1:]
-    return f"&utm_source=telegram&utm_medium=messenger&utm_campaign={utm_campaign}&utm_term=massimodutti_skidki_kazakhstan"
+    return f"?utm_source=telegram&utm_medium=messenger&utm_campaign={utm_campaign}&utm_term={config.TG_CHANNEL_NAME}"
